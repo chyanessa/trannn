@@ -3,56 +3,57 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> HK | 雙引擎翻譯</title>
+    <title>詞魂 DUAL | 全能翻譯</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@500;700&family=Noto+Sans+TC:wght@300;400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --muji-bg: #F8F7F2; --muji-red: #7F1111; }
-        body { background-color: var(--muji-bg); font-family: 'Noto Sans TC', sans-serif; padding-bottom: 40px; }
+        body { background-color: var(--muji-bg); font-family: 'Noto Sans TC', sans-serif; padding-bottom: 50px; }
         .serif { font-family: 'Noto Serif TC', serif; }
         .muji-card { background: white; border-radius: 4px; box-shadow: 0 4px 20px rgba(0,0,0,0.03); border: 1px solid #EEE; }
-        .engine-active { border-color: var(--muji-red) !important; color: var(--muji-red) !important; background: #FFF5F5; }
+        .engine-btn { transition: all 0.3s; border: 1px solid #ddd; }
+        .engine-active { border-color: var(--muji-red) !important; color: var(--muji-red) !important; background: #FFF5F5; font-weight: bold; }
+        .loading { opacity: 0.5; pointer-events: none; }
     </style>
 </head>
 <body class="p-4">
     <div class="max-w-md mx-auto">
         <header class="py-8 text-center">
             <h1 class="serif text-2xl font-bold tracking-[0.3em] text-gray-800">詞魂 DUAL</h1>
-            <p class="text-[9px] text-gray-400 mt-2 tracking-widest uppercase">Cantonese Music Global Export</p>
+            <p class="text-[9px] text-gray-400 mt-2 tracking-widest uppercase">Universal Music Translator</p>
         </header>
 
         <div class="muji-card p-5 mb-6">
             <div class="flex gap-2 mb-6">
-                <button onclick="setEngine('google')" id="eng-google" class="engine-btn flex-1 py-2 text-[10px] border rounded-sm font-bold engine-active">GOOGLE 引擎</button>
-                <button onclick="setEngine('mymemory')" id="eng-mymemory" class="engine-btn flex-1 py-2 text-[10px] border rounded-sm font-bold">AI MYMEMORY</button>
+                <button onclick="setEngine('google')" id="eng-google" class="engine-btn flex-1 py-2 text-[10px] rounded-sm engine-active">GOOGLE 引擎</button>
+                <button onclick="setEngine('mymemory')" id="eng-mymemory" class="engine-btn flex-1 py-2 text-[10px] rounded-sm bg-gray-50 text-gray-400">MYMEMORY AI</button>
             </div>
 
             <div class="flex justify-between items-center mb-4">
-                <span class="text-[10px] font-bold text-gray-400 uppercase">目標語言 (Target)</span>
-                <select id="target-lang" class="text-xs bg-gray-50 p-2 rounded outline-none border-none">
+                <span class="text-[10px] font-bold text-gray-400 uppercase tracking-widest">翻譯至 (Target)</span>
+                <select id="target-lang" class="text-xs bg-gray-100 p-2 rounded border-none outline-none font-medium">
+                    <option value="zh-TW">繁體中文 (Traditional Chinese)</option>
                     <option value="en">英文 (English)</option>
                     <option value="ja">日文 (Japanese)</option>
                     <option value="ko">韓文 (Korean)</option>
                     <option value="th">泰文 (Thai)</option>
-                    <option value="zh-TW">繁體中文 (背景潤飾)</option>
                 </select>
             </div>
 
-            <textarea id="input-text" rows="8" placeholder="貼上廣東話歌詞或原文..." 
-                      class="w-full p-4 bg-gray-50 text-sm rounded-sm mb-4 outline-none focus:bg-white transition-all"></textarea>
+            <textarea id="input-text" rows="10" placeholder="在此輸入任何語言的歌詞... (自動辨識語言)" 
+                      class="w-full p-4 bg-gray-50 text-sm rounded-sm mb-4 outline-none focus:bg-white transition-all border-none leading-relaxed"></textarea>
 
             <button onclick="performTranslation()" id="main-btn" 
-                    class="w-full bg-stone-800 text-white py-4 text-xs font-bold tracking-widest hover:bg-black transition-all">
-                跨語言感悟翻譯
+                    class="w-full bg-stone-800 text-white py-4 text-xs font-bold tracking-widest hover:bg-black transition-all shadow-lg">
+                執行全能翻譯
             </button>
         </div>
 
-        <div id="result-box" class="hidden mt-6 animate-in fade-in">
+        <div id="result-box" class="hidden mt-6">
             <div class="muji-card p-8 border-t-4 border-stone-800">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="serif text-stone-800 font-bold">翻譯成果</h3>
-                    <span id="current-engine-tag" class="text-[9px] px-2 py-1 bg-gray-100 rounded text-gray-400">GOOGLE</span>
+                <div class="flex justify-between items-center mb-6 border-b border-gray-50 pb-2">
+                    <h3 class="serif text-stone-800 font-bold">翻譯結果</h3>
+                    <span id="tag-engine" class="text-[9px] px-2 py-1 bg-gray-100 rounded text-gray-400 uppercase tracking-tighter">GOOGLE</span>
                 </div>
                 <div id="out-content" class="serif leading-[2.2] text-gray-800 whitespace-pre-wrap text-lg"></div>
             </div>
@@ -64,9 +65,14 @@
 
         function setEngine(e) {
             selectedEngine = e;
-            document.querySelectorAll('.engine-btn').forEach(b => b.classList.remove('engine-active'));
-            document.getElementById('eng-' + e).classList.add('engine-active');
-            document.getElementById('current-engine-tag').innerText = e.toUpperCase();
+            document.querySelectorAll('.engine-btn').forEach(b => {
+                b.classList.remove('engine-active');
+                b.classList.add('bg-gray-50', 'text-gray-400');
+            });
+            const activeBtn = document.getElementById('eng-' + e);
+            activeBtn.classList.add('engine-active');
+            activeBtn.classList.remove('bg-gray-50', 'text-gray-400');
+            document.getElementById('tag-engine').innerText = e.toUpperCase();
         }
 
         async function performTranslation() {
@@ -75,37 +81,42 @@
             const btn = document.getElementById('main-btn');
             const out = document.getElementById('out-content');
 
-            if (!text) return alert('請輸入歌詞');
+            if (!text.trim()) return alert('請先輸入歌詞內容');
 
-            btn.innerText = '翻譯感悟中...';
-            btn.disabled = true;
+            btn.innerText = '正在感悟語意...';
+            btn.classList.add('loading');
+            document.getElementById('result-box').classList.add('hidden');
 
             try {
                 let translatedText = "";
 
                 if (selectedEngine === 'google') {
-                    // Google 引擎
+                    // Google 引擎 (使用穩定接口)
                     const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${target}&dt=t&q=${encodeURIComponent(text)}`;
                     const res = await fetch(url);
                     const data = await res.json();
-                    data[0].forEach(item => { if (item[0]) translatedText += item[0]; });
+                    if (data && data[0]) {
+                        data[0].forEach(item => { if (item[0]) translatedText += item[0]; });
+                    }
                 } else {
-                    // MyMemory AI 引擎
-                    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=zh-HK|${target}`;
+                    // MyMemory 引擎 (自動偵測模式)
+                    const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=autodetect|${target}`;
                     const res = await fetch(url);
                     const data = await res.json();
                     translatedText = data.responseData.translatedText;
                 }
+
+                if (!translatedText) throw new Error('翻譯無效');
 
                 document.getElementById('result-box').classList.remove('hidden');
                 out.innerText = translatedText;
                 window.scrollTo({ top: document.getElementById('result-box').offsetTop - 20, behavior: 'smooth' });
 
             } catch (e) {
-                alert('翻譯引擎暫時繁忙，請切換另一個引擎試試。');
+                alert('翻譯引擎暫時繁忙或輸入內容過長，請稍後再試或縮短字數。');
             } finally {
-                btn.innerText = '跨語言感悟翻譯';
-                btn.disabled = false;
+                btn.innerText = '執行全能翻譯';
+                btn.classList.remove('loading');
             }
         }
     </script>
