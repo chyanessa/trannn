@@ -3,83 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>詞魂 | 真 · 靈魂轉譯</title>
+    <title>詞魂 | 英中雙語對照</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@600;700&display=swap" rel="stylesheet">
     <style>
         body { background-color: #000; color: #fff; font-family: sans-serif; }
         .serif { font-family: 'Noto Serif TC', serif; }
         .lyric-card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); backdrop-filter: blur(20px); }
+        .highlight-text { color: #fde68a; line-height: 1.8; letter-spacing: 0.05em; }
+        .chinese-text { color: rgba(255,255,255,0.6); font-size: 0.8em; margin-top: 0.5rem; }
     </style>
 </head>
 <body class="p-6">
     <div class="max-w-xl mx-auto">
         <header class="text-center py-10">
             <h1 class="serif text-3xl font-bold tracking-[0.5em] text-amber-50">詞魂</h1>
-            <p class="text-[9px] text-amber-200/40 mt-4 tracking-[0.4em] uppercase">Cinematic Soul Translation</p>
+            <p class="text-[9px] text-amber-200/40 mt-4 tracking-[0.4em] uppercase">English & Chinese Vision</p>
         </header>
 
         <div class="lyric-card p-8 rounded-2xl mb-8">
-            <input type="password" id="api-key" placeholder="貼上你的免費 Gemini API Key" class="w-full bg-white/5 border-none p-3 rounded mb-6 text-xs text-white outline-none">
-            
-            <select id="target-lang" class="w-full bg-white/10 p-3 rounded mb-6 text-sm text-amber-50 outline-none border-none">
-                <option value="English">Poetic English (電影詩意)</option>
-                <option value="Traditional Chinese">繁體中文 (意境潤飾)</option>
-                <option value="Japanese">日本語 (物哀風)</option>
-            </select>
+            <div class="mb-4">
+                <label class="text-[10px] text-amber-200/50 uppercase tracking-widest block mb-2">模式選擇</label>
+                <select id="engine-mode" onchange="toggleApiKey()" class="w-full bg-white/10 p-3 rounded text-sm text-white outline-none border-none">
+                    <option value="gemini">AI 靈魂模式 (需 Gemini Key)</option>
+                    <option value="free">備用穩定模式 (免 Key 直連)</option>
+                </select>
+            </div>
 
-            <textarea id="input-text" rows="6" placeholder="輸入歌詞... (例如: 祝你在餘下年月 能活百歲)" 
+            <div id="key-section">
+                <label class="text-[10px] text-amber-200/50 uppercase tracking-widest block mb-2">API Key</label>
+                <input type="password" id="api-key" placeholder="貼上 API Key..." class="w-full bg-white/5 border-none p-3 rounded mb-6 text-xs text-white outline-none">
+            </div>
+
+            <label class="text-[10px] text-amber-200/50 uppercase tracking-widest block mb-2">歌詞原文</label>
+            <textarea id="input-text" rows="5" placeholder="輸入廣東話歌詞..." 
                       class="w-full bg-transparent text-lg text-white/90 outline-none border-none resize-none mb-6"></textarea>
 
-            <button onclick="aiTranslate()" id="btn" class="w-full bg-amber-50 text-black py-4 rounded-full font-bold tracking-widest hover:bg-white transition-all">賦予靈魂翻譯</button>
+            <button onclick="startTranslate()" id="btn" class="w-full bg-amber-50 text-black py-4 rounded-full font-bold tracking-widest hover:bg-white transition-all shadow-xl">開始雙語轉譯</button>
         </div>
 
-        <div id="result-box" class="hidden animate-in fade-in duration-1000">
-            <div class="lyric-card p-12 rounded-3xl text-center border-amber-200/20">
-                <div id="out-content" class="serif italic text-2xl md:text-3xl text-amber-50/90 leading-[2.8] whitespace-pre-wrap"></div>
-                <div class="mt-12 h-[1px] w-20 bg-amber-200/20 mx-auto"></div>
+        <div id="result-box" class="hidden animate-in fade-in duration-1000 mb-20">
+            <div class="lyric-card p-10 md:p-14 rounded-3xl text-center border-amber-200/20">
+                <div id="out-content" class="serif italic text-2xl md:text-3xl font-bold"></div>
+                <div class="mt-12 flex justify-center items-center gap-4">
+                    <div class="h-[1px] w-12 bg-amber-200/20"></div>
+                    <span class="serif text-[9px] text-amber-200/30 tracking-[0.4em] uppercase">Lyric Soul</span>
+                    <div class="h-[1px] w-12 bg-amber-200/20"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <script>
-        async function aiTranslate() {
-            const key = document.getElementById('api-key').value;
+        function toggleApiKey() {
+            const mode = document.getElementById('engine-mode').value;
+            document.getElementById('key-section').style.display = mode === 'gemini' ? 'block' : 'none';
+        }
+
+        async function startTranslate() {
+            const mode = document.getElementById('engine-mode').value;
+            const key = document.getElementById('api-key').value.trim();
             const text = document.getElementById('input-text').value;
-            const target = document.getElementById('target-lang').value;
             const btn = document.getElementById('btn');
+            const out = document.getElementById('out-content');
 
-            if(!key || !text) return alert('請輸入 Key 同歌詞');
+            if (!text) return alert('請輸入歌詞');
+            if (mode === 'gemini' && !key) return alert('AI 模式需要 API Key');
 
-            btn.innerText = '正在釀造靈魂...';
+            btn.innerText = '正在釀造意境...';
             btn.disabled = true;
-
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
-            const prompt = `你是一位精通粵語與多國文學的翻譯大師。請將這段廣東歌歌詞翻譯成${target}。
-            要求：
-            1. 絕對不要直譯，要追求電影感與詩意。
-            2. 捕捉廣東話中的遺憾、祝福或情感深度。
-            3. 如果翻譯成英文，風格請參考王家衛電影字幕或經典英文詩歌。
-            
-            歌詞：\n${text}`;
+            out.innerHTML = '';
 
             try {
-                const res = await fetch(url, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({contents: [{parts: [{text: prompt}]}]})
-                });
-                const data = await res.json();
-                const result = data.candidates[0].content.parts[0].text;
+                if (mode === 'gemini') {
+                    // Gemini AI 模式
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${key}`;
+                    const prompt = `你是一位歌詞翻譯家，請將這段廣東歌歌詞翻譯成 Poetic English。
+                    要求：
+                    1. 絕對不要直譯，風格參考王家衛電影字幕。
+                    2. 輸出格式必須是：每一行英文下面緊跟著對應的繁體中文原意。
+                    內容：\n${text}`;
 
-                document.getElementById('result-box').classList.remove('hidden');
-                document.getElementById('out-content').innerText = result;
+                    const res = await fetch(url, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({contents: [{parts: [{text: prompt}]}]})
+                    });
+                    const data = await res.json();
+                    if (!res.ok) throw new Error(data.error.message);
+                    
+                    const result = data.candidates[0].content.parts[0].text;
+                    renderResult(result);
+                } else {
+                    // 免 Key 備用模式
+                    const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodeURIComponent(text)}`;
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    let finalHtml = "";
+                    data[0].forEach(item => {
+                        if (item[0]) {
+                            finalHtml += `<div class="mb-6"><div class="highlight-text">${item[0]}</div><div class="chinese-text">${item[1]}</div></div>`;
+                        }
+                    });
+                    document.getElementById('result-box').classList.remove('hidden');
+                    out.innerHTML = finalHtml;
+                }
             } catch (e) {
-                alert('API Key 錯誤或網絡問題');
+                alert('翻譯失敗：' + e.message);
             } finally {
-                btn.innerText = '賦予靈魂翻譯';
+                btn.innerText = '開始雙語轉譯';
                 btn.disabled = false;
             }
+        }
+
+        function renderResult(text) {
+            const lines = text.split('\n');
+            let html = "";
+            lines.forEach(line => {
+                if (line.trim()) {
+                    // 簡單判斷中英文排版
+                    const isChinese = /[\u4e00-\u9fa5]/.test(line);
+                    if (isChinese) {
+                        html += `<div class="chinese-text mb-6">${line}</div>`;
+                    } else {
+                        html += `<div class="highlight-text">${line}</div>`;
+                    }
+                }
+            });
+            document.getElementById('result-box').classList.remove('hidden');
+            document.getElementById('out-content').innerHTML = html;
         }
     </script>
 </body>
